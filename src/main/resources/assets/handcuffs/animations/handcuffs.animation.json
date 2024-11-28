@@ -1,0 +1,28 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"close": {
+			"loop": true,
+			"animation_length": 0.0417
+		},
+		"open": {
+			"loop": true,
+			"animation_length": 0.0833,
+			"bones": {
+				"bone3": {
+					"rotation": {
+						"vector": [0, 0, -230],
+						"easing": "linear"
+					}
+				},
+				"bone4": {
+					"rotation": {
+						"vector": [0, 0, 230],
+						"easing": "linear"
+					}
+				}
+			}
+		}
+	},
+	"geckolib_format_version": 2
+}

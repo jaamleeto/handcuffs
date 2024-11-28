@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "net.streavent.handcuffs.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "mixins.handcuffs.refmap.json",
+  "mixins": [
+    "PlayerEntityMixin"
+  ],
+  "client": [],
+  "minVersion": "0.8"
+}

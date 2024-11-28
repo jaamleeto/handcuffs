@@ -1,0 +1,132 @@
+{
+  "mod_elements": [
+    {
+      "name": "Handcuffs",
+      "type": "item",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuffs",
+      "metadata": {
+        "files": [
+          "src/main/resources/assets/handcuffs/models/item/handcuffs.json",
+          "src/main/java/net/streavent/handcuffs/item/HandcuffsItem.java"
+        ]
+      }
+    },
+    {
+      "name": "Key",
+      "type": "item",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "key",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/item/KeyItem.java",
+          "src/main/resources/assets/handcuffs/models/item/key.json"
+        ]
+      }
+    },
+    {
+      "name": "PlayerAnimatorInit",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "player_animator_init",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/PlayerAnimatorInit.java"
+        ]
+      }
+    },
+    {
+      "name": "HandcuffsEventsHandler",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuffs_events_handler",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/HandcuffsEventsHandler.java"
+        ]
+      }
+    },
+    {
+      "name": "HandcuffsClientHandler",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuffs_client_handler",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/HandcuffsClientHandler.java"
+        ]
+      }
+    },
+    {
+      "name": "HandcuffsAttributes",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuffs_attributes",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/HandcuffsAttributes.java"
+        ]
+      }
+    },
+    {
+      "name": "HandcuffsCommand",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuffs_command",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/HandcuffsCommand.java"
+        ]
+      }
+    }
+  ],
+  "variable_elements": [],
+  "sound_elements": [],
+  "tag_elements": {},
+  "tab_element_order": {},
+  "language_map": {
+    "en_us": {
+      "item.handcuffs.handcuffs": "§7Handcuffs",
+      "commands.generic.player.notFound": "Player not found",
+      "item.handcuffs.key.tooltip": "§a§lRight-click §r§7on a player to uncuff them or break the link of two handcuffed players.",
+      "commands.handcuffs.success.handcuffed": "%s has been handcuffed",
+      "commands.handcuffs.success.uncuffed": "%s has been uncuffed",
+      "item.handcuffs.tooltip": "§a§lRight-click §r§7to handcuff a player. A handcuffed player cannot use items, attack, or break blocks. To uncuff, a key item is required.",
+      "commands.handcuffs.invalidAction": "Invalid action! Use \u0027handcuff\u0027 or \u0027uncuff\u0027",
+      "item.handcuffs.key": "§7Handcuffs Key"
+    }
+  },
+  "foldersRoot": {
+    "name": "~",
+    "children": []
+  },
+  "workspaceSettings": {
+    "modid": "handcuffs",
+    "modName": "Handcuffs",
+    "version": "1.0.0",
+    "description": " A mod that adds handcuffs to Minecraft, allowing players to restrain others with customizable interactions, restrictions, and effects.",
+    "author": "Streavent Studios, Jaamleeto",
+    "license": "All Rights Reserved",
+    "serverSideOnly": false,
+    "requiredMods": [],
+    "dependencies": [],
+    "dependants": [],
+    "mcreatorDependencies": [
+      "configured",
+      "geckolib",
+      "catalogue",
+      "player_animator"
+    ],
+    "currentGenerator": "forge-1.16.5",
+    "credits": "Streavent Studios",
+    "modElementsPackage": "net.streavent.handcuffs"
+  },
+  "mcreatorVersion": 202400232117
+}

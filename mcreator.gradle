@@ -1,0 +1,57 @@
+repositories {
+         maven {
+             url = 'https://cursemaven.com/'
+         }
+       }
+       
+       dependencies {
+         implementation fg.deobf("curse.maven:configured-457570:4462830")
+       }
+
+
+repositories {
+         maven {
+             url = 'https://cursemaven.com/'
+         }
+       }
+       
+       dependencies {
+         implementation fg.deobf("curse.maven:geckolib-388172:4182600")
+       }
+
+
+repositories {
+         maven {
+             url = 'https://cursemaven.com/'
+         }
+       }
+       
+       dependencies {
+         implementation fg.deobf("curse.maven:catalogue-459701:3780550")
+       }
+
+
+minecraft {
+  runs {
+   client {    
+      property 'mixin.env.remapRefMap', 'true'
+      property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+       }
+        server {
+         property 'mixin.env.remapRefMap', 'true'
+         property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+       }
+      }
+     }
+
+repositories {
+ maven {
+     url = 'https://maven.kosmx.dev/'
+ }
+}
+
+ dependencies {
+   implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:0.4.0+1.16.5")
+ }
+
+

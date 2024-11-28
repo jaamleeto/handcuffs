@@ -1,0 +1,54 @@
+modLoader="javafml"
+loaderVersion="[36,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="handcuffs"
+version="1.0.0"
+displayName="Handcuffs"
+displayURL="https://mcreator.net"
+credits="Streavent Studios"
+authors="Streavent Studios, Jaamleeto"
+description=" A mod that adds handcuffs to Minecraft, allowing players to restrain others with customizable interactions, restrictions, and effects."
+
+# Start of user code block mod configuration
+# End of user code block mod configuration
+
+[[dependencies.handcuffs]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.16.5]"
+ordering="AFTER"
+side="BOTH"
+
+
+[[dependencies.handcuffs]]
+modId="configured"
+mandatory=false
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.handcuffs]]
+modId="geckolib"
+mandatory=false
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.handcuffs]]
+modId="catalogue"
+mandatory=false
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.handcuffs]]
+modId="player_animator"
+mandatory=false
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+
+
+# Start of user code block dependencies configuration
+[modloading.mixins]
+common = "mixins.handcuffs.json"
+# End of user code block dependencies configuration
