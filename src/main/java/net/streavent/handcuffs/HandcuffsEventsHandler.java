@@ -5,7 +5,6 @@ import net.streavent.handcuffs.item.KeyItem;
 import net.streavent.handcuffs.item.HandcuffsItem;
 import net.streavent.handcuffs.config.HandcuffsCommonConfig;
 
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -19,34 +18,26 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.particles.ItemParticleData;
 import net.minecraft.item.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
-import net.minecraft.entity.ai.attributes.GlobalEntityTypeAttributes;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attribute;
-import net.minecraft.entity.EntityType;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.Block;
 
 import java.util.UUID;
 
 @Mod.EventBusSubscriber
 public class HandcuffsEventsHandler {
-	@SubscribeEvent
-	public static void onAtributeCommonSetup(FMLCommonSetupEvent event) {
-		event.enqueueWork(() -> {
-			System.out.println("Registrando atributos para el jugador...");
-			GlobalEntityTypeAttributes.put(EntityType.PLAYER, PlayerEntity.registerAttributes().createMutableAttribute(HandcuffsAttributes.HANDCUFFED.get(), 0.0D).create());
-			System.out.println("Atributo HANDCUFFED registrado para el jugador.");
-		});
-	}
-
 	private static void applyHandcuffedAttribute(PlayerEntity player) {
 		player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).setBaseValue(1.0D);
 	}
 
 	@SubscribeEvent
 	public static void onHandcuffsUseItem(PlayerInteractEvent.EntityInteract event) {
-		if (!HandcuffsCommonConfig.ENABLE_ITEM_BREAKING_EFFECTS.get())
+		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get())
 			return;
 		PlayerEntity player = event.getPlayer();
 		ItemStack handcuffItem = player.getHeldItemMainhand();
@@ -103,7 +94,7 @@ public class HandcuffsEventsHandler {
 
 	@SubscribeEvent
 	public static void onHandcuffsUseItem(PlayerInteractEvent.RightClickItem event) {
-		if (!HandcuffsCommonConfig.ENABLE_ITEM_BREAKING_EFFECTS.get())
+		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get())
 			return;
 		PlayerEntity player = event.getPlayer();
 		ItemStack handcuffItem = player.getHeldItemMainhand();
@@ -156,26 +147,40 @@ public class HandcuffsEventsHandler {
 		if (event.phase != TickEvent.Phase.START || event.player.world.isRemote || !(event.player instanceof PlayerEntity))
 			return;
 		PlayerEntity player = (PlayerEntity) event.player;
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
-			UUID ATTACK_DAMAGE_UUID = UUID.fromString("1d9a5d34-1c84-4e4a-8bfc-abb31a7d7913");
-			UUID ATTACK_SPEED_UUID = UUID.fromString("1fa4cb12-dc4a-4e5d-bbc8-e14d376b6d1e");
-			applyAttributeModifiers(player, ATTACK_DAMAGE_UUID, ATTACK_SPEED_UUID);
-		} else {
-			UUID ATTACK_DAMAGE_UUID = UUID.fromString("1d9a5d34-1c84-4e4a-8bfc-abb31a7d7913");
-			UUID ATTACK_SPEED_UUID = UUID.fromString("1fa4cb12-dc4a-4e5d-bbc8-e14d376b6d1e");
-			removeAttributeModifiers(player, ATTACK_DAMAGE_UUID, ATTACK_SPEED_UUID);
+		if (player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()) != null) {
+			double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
+			if (handcuffedValue == 1.0) {
+				if (HandcuffsCommonConfig.ATTACK_MODIFIERS.get()) {
+					UUID ATTACK_DAMAGE_UUID = UUID.fromString("1d9a5d34-1c84-4e4a-8bfc-abb31a7d7913");
+					UUID ATTACK_SPEED_UUID = UUID.fromString("1fa4cb12-dc4a-4e5d-bbc8-e14d376b6d1e");
+					applyAttributeModifiers(player, ATTACK_DAMAGE_UUID, ATTACK_SPEED_UUID);
+				}
+			} else {
+				if (HandcuffsCommonConfig.ATTACK_MODIFIERS.get()) {
+					UUID ATTACK_DAMAGE_UUID = UUID.fromString("1d9a5d34-1c84-4e4a-8bfc-abb31a7d7913");
+					UUID ATTACK_SPEED_UUID = UUID.fromString("1fa4cb12-dc4a-4e5d-bbc8-e14d376b6d1e");
+					removeAttributeModifiers(player, ATTACK_DAMAGE_UUID, ATTACK_SPEED_UUID);
+				}
+			}
 		}
 	}
 
 	private static void applyAttributeModifiers(PlayerEntity player, UUID attackDamageUUID, UUID attackSpeedUUID) {
-		addAttributeModifier(player, Attributes.ATTACK_DAMAGE, attackDamageUUID, -player.getAttribute(Attributes.ATTACK_DAMAGE).getValue(), AttributeModifier.Operation.ADDITION);
-		addAttributeModifier(player, Attributes.ATTACK_SPEED, attackSpeedUUID, -player.getAttribute(Attributes.ATTACK_SPEED).getBaseValue(), AttributeModifier.Operation.ADDITION);
+		if (HandcuffsCommonConfig.ATTACK_MODIFIERS.get()) {
+			addAttributeModifier(player, Attributes.ATTACK_DAMAGE, attackDamageUUID, -player.getAttribute(Attributes.ATTACK_DAMAGE).getValue(), AttributeModifier.Operation.ADDITION);
+		}
+		if (HandcuffsCommonConfig.ATTACK_SPEED_MODIFIERS.get()) {
+			addAttributeModifier(player, Attributes.ATTACK_SPEED, attackSpeedUUID, -player.getAttribute(Attributes.ATTACK_SPEED).getBaseValue(), AttributeModifier.Operation.ADDITION);
+		}
 	}
 
 	private static void removeAttributeModifiers(PlayerEntity player, UUID attackDamageUUID, UUID attackSpeedUUID) {
-		removeAttributeModifier(player, Attributes.ATTACK_DAMAGE, attackDamageUUID);
-		removeAttributeModifier(player, Attributes.ATTACK_SPEED, attackSpeedUUID);
+		if (HandcuffsCommonConfig.ATTACK_MODIFIERS.get()) {
+			removeAttributeModifier(player, Attributes.ATTACK_DAMAGE, attackDamageUUID);
+		}
+		if (HandcuffsCommonConfig.ATTACK_SPEED_MODIFIERS.get()) {
+			removeAttributeModifier(player, Attributes.ATTACK_SPEED, attackSpeedUUID);
+		}
 	}
 
 	private static void addAttributeModifier(PlayerEntity player, Attribute attribute, UUID uuid, double value, AttributeModifier.Operation operation) {
@@ -194,11 +199,11 @@ public class HandcuffsEventsHandler {
 
 	@SubscribeEvent
 	public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
-		if (!HandcuffsCommonConfig.ENABLE_BLOCK_BREAK_RESTRICTION.get())
+		if (!HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get())
 			return;
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 			event.setNewSpeed(0.0f);
 		} else {
 			event.setNewSpeed(event.getOriginalSpeed());
@@ -207,42 +212,54 @@ public class HandcuffsEventsHandler {
 
 	@SubscribeEvent
 	public static void onPlayerLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+		if (!HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get())
+			return;
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 			event.setCanceled(true);
 		}
 	}
 
 	@SubscribeEvent
 	public static void onPlayerAttack(AttackEntityEvent event) {
-		if (!HandcuffsCommonConfig.ENABLE_ATTACK_RESTRICTION.get())
+		if (!HandcuffsCommonConfig.ATTACK_RESTRICTION.get())
 			return;
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 			event.setCanceled(true);
 		}
 	}
 
 	@SubscribeEvent
 	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		if (!HandcuffsCommonConfig.ENABLE_BLOCK_INTERACTION_RESTRICTION.get())
+		if (!HandcuffsCommonConfig.BLOCK_INTERACTION_RESTRICTION.get())
 			return;
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
-			event.setCanceled(true);
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		Block block = event.getWorld().getBlockState(event.getPos()).getBlock();
+		boolean isContainer = block instanceof IInventory || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL || block == Blocks.ENDER_CHEST;
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
+			if (HandcuffsCommonConfig.CONTAINER_INTERACTION_RESTRICTION.get()) {
+				if (!isContainer) {
+					event.setCanceled(true);
+				}
+			} else {
+				if (!isContainer) {
+					event.setCanceled(true);
+				}
+			}
 		}
 	}
 
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		if (!HandcuffsCommonConfig.ENABLE_ENTITY_INTERACTION_RESTRICTION.get())
+		if (!HandcuffsCommonConfig.ENTITY_INTERACTION_RESTRICTION.get())
 			return;
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 			event.setCanceled(true);
 		}
 	}
@@ -250,8 +267,8 @@ public class HandcuffsEventsHandler {
 	@SubscribeEvent
 	public static void onHandcuffed(PlayerInteractEvent.RightClickItem event) {
 		PlayerEntity player = event.getPlayer();
-		double handcuffedValue = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).getValue();
-		if (handcuffedValue == 1.0) {
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 			if (!(player.getHeldItemMainhand().getItem() instanceof KeyItem)) {
 				event.setCanceled(true);
 			}

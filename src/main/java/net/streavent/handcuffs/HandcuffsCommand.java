@@ -1,6 +1,9 @@
 
 package net.streavent.handcuffs;
 
+import net.streavent.handcuffs.config.HandcuffsCommonConfig;
+
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -18,18 +21,40 @@ import com.mojang.brigadier.Command;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class HandcuffsCommand {
+	private static boolean commandRegistered = false;
+
 	@SubscribeEvent
 	public static void onServerStarting(RegisterCommandsEvent event) {
 		CommandDispatcher<CommandSource> dispatcher = event.getDispatcher();
-		dispatcher.register(Commands.literal("handcuffs").requires(source -> source.hasPermissionLevel(2)) // Solo operadores pueden usar el comando
-				.then(Commands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
-					context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> builder.suggest(player.getName().getString()));
-					return builder.buildFuture();
-				}).then(Commands.argument("action", StringArgumentType.word()).suggests((context, builder) -> {
-					builder.suggest("handcuff");
-					builder.suggest("uncuff");
-					return builder.buildFuture();
-				}).executes(context -> execute(context.getSource(), StringArgumentType.getString(context, "player"), StringArgumentType.getString(context, "action"))))));
+		if (HandcuffsCommonConfig.HANDCUFFS_COMMAND_USAGE.get() && !commandRegistered) {
+			registerCommand(dispatcher);
+			commandRegistered = true;
+		}
+	}
+
+	@SubscribeEvent
+	public static void onConfigChanged(ModConfig.Reloading event) {
+		boolean isEnabled = HandcuffsCommonConfig.HANDCUFFS_COMMAND_USAGE.get();
+		if (isEnabled && !commandRegistered) {
+			commandRegistered = true;
+		} else if (!isEnabled && commandRegistered) {
+			commandRegistered = false;
+		}
+	}
+
+	private static void registerCommand(CommandDispatcher<CommandSource> dispatcher) {
+		dispatcher.register(Commands.literal("handcuffs").requires(source -> source.hasPermissionLevel(2)).then(Commands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
+			context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> builder.suggest(player.getName().getString()));
+			return builder.buildFuture();
+		}).then(Commands.argument("action", StringArgumentType.word()).suggests((context, builder) -> {
+			builder.suggest("handcuff");
+			builder.suggest("uncuff");
+			return builder.buildFuture();
+		}).executes(context -> execute(context.getSource(), StringArgumentType.getString(context, "player"), StringArgumentType.getString(context, "action"))))));
+	}
+
+	private static void unregisterCommand(CommandDispatcher<CommandSource> dispatcher) {
+		commandRegistered = false;
 	}
 
 	public static int execute(CommandSource source, String playerName, String action) {

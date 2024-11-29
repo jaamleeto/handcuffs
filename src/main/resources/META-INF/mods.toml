@@ -7,6 +7,7 @@ modId="handcuffs"
 version="1.0.0"
 displayName="Handcuffs"
 displayURL="https://mcreator.net"
+logoFile="logo.png"
 credits="Streavent Studios"
 authors="Streavent Studios, Jaamleeto"
 description=" A mod that adds handcuffs to Minecraft, allowing players to restrain others with customizable interactions, restrictions, and effects."
@@ -51,4 +52,7 @@ side="BOTH"
 # Start of user code block dependencies configuration
 [modloading.mixins]
 common = "mixins.handcuffs.json"
+[modproperties.handcuffs]
+catalogueItemIcon="handcuffs:key"
+configuredBackground="minecraft:textures/block/stripped_oak_log.png"
 # End of user code block dependencies configuration

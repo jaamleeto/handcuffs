@@ -26,7 +26,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.Item;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
 
+import java.util.concurrent.Callable;
 import java.util.Properties;
 import java.util.List;
 
@@ -36,8 +38,13 @@ public class HandcuffsItem extends Item implements IAnimatable, ISyncable {
 	private final AnimationFactory factory = GeckoLibUtil.createFactory(this);
 
 	public HandcuffsItem() {
-		super(new Properties().group(ItemGroup.TOOLS).maxStackSize(1).rarity(Rarity.COMMON).setISTER(() -> () -> new HandcuffsRender()));
+		super(new Properties().group(ItemGroup.TOOLS).maxStackSize(1).rarity(Rarity.COMMON).setISTER(() -> getISTER()));
 		GeckoLibNetwork.registerSyncable(this);
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	private static Callable<ItemStackTileEntityRenderer> getISTER() {
+		return HandcuffsRender::new;
 	}
 
 	@Override

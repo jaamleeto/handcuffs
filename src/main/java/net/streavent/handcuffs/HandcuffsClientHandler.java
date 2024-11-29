@@ -4,7 +4,6 @@ package net.streavent.handcuffs;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
 
 import net.minecraft.util.ResourceLocation;
@@ -18,8 +17,7 @@ import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 
-@OnlyIn(Dist.CLIENT)
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = "handcuffs", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class HandcuffsClientHandler {
 	private static Minecraft minecraft = Minecraft.getInstance();
 
