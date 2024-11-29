@@ -16,6 +16,17 @@ repositories {
        }
        
        dependencies {
+         implementation fg.deobf("curse.maven:gamemenumodoption-353051:3600710")
+       }
+
+
+repositories {
+         maven {
+             url = 'https://cursemaven.com/'
+         }
+       }
+       
+       dependencies {
          implementation fg.deobf("curse.maven:geckolib-388172:4182600")
        }
 

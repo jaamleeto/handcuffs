@@ -30,6 +30,12 @@ versionRange="[0,)"
 ordering="NONE"
 side="BOTH"
 [[dependencies.handcuffs]]
+modId="mod_option"
+mandatory=false
+versionRange="[0,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.handcuffs]]
 modId="geckolib"
 mandatory=false
 versionRange="[0,)"

@@ -124,6 +124,7 @@
     "dependants": [],
     "mcreatorDependencies": [
       "configured",
+      "mod_option",
       "geckolib",
       "catalogue",
       "player_animator"
