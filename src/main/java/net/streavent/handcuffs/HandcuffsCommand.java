@@ -3,7 +3,6 @@ package net.streavent.handcuffs;
 
 import net.streavent.handcuffs.config.HandcuffsCommonConfig;
 
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -21,24 +20,11 @@ import com.mojang.brigadier.Command;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class HandcuffsCommand {
-	private static boolean commandRegistered = false;
-
 	@SubscribeEvent
-	public static void onServerStarting(RegisterCommandsEvent event) {
+	public static void onRegisterCommands(RegisterCommandsEvent event) {
 		CommandDispatcher<CommandSource> dispatcher = event.getDispatcher();
-		if (HandcuffsCommonConfig.HANDCUFFS_COMMAND_USAGE.get() && !commandRegistered) {
+		if (HandcuffsCommonConfig.HANDCUFFS_COMMAND_USAGE.get()) {
 			registerCommand(dispatcher);
-			commandRegistered = true;
-		}
-	}
-
-	@SubscribeEvent
-	public static void onConfigChanged(ModConfig.Reloading event) {
-		boolean isEnabled = HandcuffsCommonConfig.HANDCUFFS_COMMAND_USAGE.get();
-		if (isEnabled && !commandRegistered) {
-			commandRegistered = true;
-		} else if (!isEnabled && commandRegistered) {
-			commandRegistered = false;
 		}
 	}
 
@@ -51,10 +37,6 @@ public class HandcuffsCommand {
 			builder.suggest("uncuff");
 			return builder.buildFuture();
 		}).executes(context -> execute(context.getSource(), StringArgumentType.getString(context, "player"), StringArgumentType.getString(context, "action"))))));
-	}
-
-	private static void unregisterCommand(CommandDispatcher<CommandSource> dispatcher) {
-		commandRegistered = false;
 	}
 
 	public static int execute(CommandSource source, String playerName, String action) {

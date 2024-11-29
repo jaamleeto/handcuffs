@@ -17,7 +17,7 @@ import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 
-@Mod.EventBusSubscriber(modid = "handcuffs", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = "handcuffs", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class HandcuffsClientHandler {
 	private static Minecraft minecraft = Minecraft.getInstance();
 
