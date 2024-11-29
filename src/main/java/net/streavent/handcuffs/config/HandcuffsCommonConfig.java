@@ -16,30 +16,27 @@ public class HandcuffsCommonConfig {
 	public static final ForgeConfigSpec.BooleanValue BLOCK_BREAK_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue CONTAINER_INTERACTION_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue HANDCUFFS_COMMAND_USAGE;
-	public static final ForgeConfigSpec.BooleanValue ATTACK_MODIFIERS;
-	public static final ForgeConfigSpec.BooleanValue ATTACK_SPEED_MODIFIERS;
+	public static final ForgeConfigSpec.BooleanValue ATTACK_DAMAGE_MODIFIER;
+	public static final ForgeConfigSpec.BooleanValue ATTACK_SPEED_MODIFIER;
 	static {
 		BUILDER.push("Handcuffs Behavior Settings");
-		// Handcuffs Usage
-		HANDCUFFS_USAGE = BUILDER.comment("Enable or disable the general usage of handcuffs.").define("Handcuffs Usage", true);
+		// General Handcuffs Usage
+		HANDCUFFS_USAGE = BUILDER.comment("Allow or disable the general usage of handcuffs.").define("Allow Handcuffs Usage", true);
+		// Interaction Restrictions
+		BUILDER.push("Interaction Restrictions");
+		BLOCK_INTERACTION_RESTRICTION = BUILDER.comment("Restrict block interactions (placing or breaking blocks) while the player is handcuffed.").define("Restrict Block Interaction", true);
+		ENTITY_INTERACTION_RESTRICTION = BUILDER.comment("Restrict entity interactions (e.g., right-clicking entities) while the player is handcuffed.").define("Restrict Entity Interaction", true);
+		CONTAINER_INTERACTION_RESTRICTION = BUILDER.comment("Restrict interactions with containers (such as chests, barrels, etc.) while the player is handcuffed.").define("Restrict Container Interaction", true);
+		BUILDER.pop();
 		// Attack Restrictions
-		ATTACK_RESTRICTION = BUILDER.comment("Restrict attacking while the player is handcuffed.").define("Attack Restriction", true);
-		// Block Interaction Restrictions
-		BLOCK_INTERACTION_RESTRICTION = BUILDER.comment("Restrict block interactions (placing or breaking blocks) while the player is handcuffed.").define("Block Interaction Restriction", true);
-		// Entity Interaction Restrictions
-		ENTITY_INTERACTION_RESTRICTION = BUILDER.comment("Restrict entity interactions (e.g., right-clicking entities) while the player is handcuffed.").define("Entity Interaction Restriction", true);
-		// Item Breaking Effects
-		ITEM_BREAKING_EFFECTS = BUILDER.comment("Enable or disable effects when using a key to break the handcuffs.").define("Item Breaking Effects", true);
-		// Block Breaking Restrictions
-		BLOCK_BREAK_RESTRICTION = BUILDER.comment("Restrict block breaking while the player is handcuffed.").define("Block Breaking Restriction", true);
-		// Container Interaction Restrictions (e.g., chests, barrels, etc.)
-		CONTAINER_INTERACTION_RESTRICTION = BUILDER.comment("Restrict interactions with containers (such as chests, barrels, etc.) while the player is handcuffed.").define("Container Interaction Restriction", true);
-		// Handcuffs Command Usage
-		HANDCUFFS_COMMAND_USAGE = BUILDER.comment("Enable or disable the handcuffs command.").define("Handcuffs Command Usage", true);
-		// Attack Modifiers
-		ATTACK_MODIFIERS = BUILDER.comment("Enable or disable attack damage modifier when the player is handcuffed.").define("Attack Damage Modifier", true);
-		// Attack Speed Modifiers
-		ATTACK_SPEED_MODIFIERS = BUILDER.comment("Enable or disable attack speed modifier when the player is handcuffed.").define("Attack Speed Modifier", true);
+		ATTACK_RESTRICTION = BUILDER.comment("Restrict attacking while the player is handcuffed.").define("Restrict Attack While Handcuffed", true);
+		// Effects and Restrictions for Item Breaking and Block Breaking
+		ITEM_BREAKING_EFFECTS = BUILDER.comment("Enable or disable effects when using a key to break the handcuffs.").define("Enable Item Breaking Effects", true);
+		BLOCK_BREAK_RESTRICTION = BUILDER.comment("Restrict block breaking while the player is handcuffed.").define("Restrict Block Breaking", true);
+		// Command and Modifier Settings
+		HANDCUFFS_COMMAND_USAGE = BUILDER.comment("Enable or disable the handcuffs command.").define("Enable Handcuffs Command Usage", true);
+		ATTACK_DAMAGE_MODIFIER = BUILDER.comment("Enable or disable attack damage modifier when the player is handcuffed.").define("Enable Attack Damage Modifier", true);
+		ATTACK_SPEED_MODIFIER = BUILDER.comment("Enable or disable attack speed modifier when the player is handcuffed.").define("Enable Attack Speed Modifier", true);
 		BUILDER.pop();
 		COMMON_CONFIG = BUILDER.build();
 	}

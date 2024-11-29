@@ -1,7 +1,6 @@
 package net.streavent.handcuffs.client;
 
 import net.streavent.handcuffs.init.HandcuffsModItems;
-import net.streavent.handcuffs.config.HandcuffsClientConfig;
 import net.streavent.handcuffs.HandcuffsAttributes;
 
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -35,23 +34,31 @@ public class HandcuffsLayer extends LayerRenderer<AbstractClientPlayerEntity, Pl
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0) {
 			matrixStack.push();
-			// Read values from the config
-			double rotateX = HandcuffsClientConfig.ROTATE_X.get().floatValue();
-			double rotateY = HandcuffsClientConfig.ROTATE_Y.get().floatValue();
-			double rotateZ = HandcuffsClientConfig.ROTATE_Z.get().floatValue();
-			double translateX = HandcuffsClientConfig.TRANSLATE_X.get().floatValue();
-			double translateY = HandcuffsClientConfig.TRANSLATE_Y.get().floatValue();
-			double translateZ = HandcuffsClientConfig.TRANSLATE_Z.get().floatValue();
-			float scaleX = HandcuffsClientConfig.SCALE_X.get().floatValue();
-			float scaleY = HandcuffsClientConfig.SCALE_Y.get().floatValue();
-			float scaleZ = HandcuffsClientConfig.SCALE_Z.get().floatValue();
+			// Define default values
+			float rotateX = -90.0f;
+			float rotateY = 0.0f;
+			float rotateZ = 180.0f;
+			float translateX = 0.085f;
+			float translateY = 0.71f;
+			float translateZ = -0.15f;
+			float scale = 1.0f;
+			// Adjust values if the player is crouching
+			if (player.isCrouching()) {
+				rotateX = -120.0f;
+				rotateY = 0.0f;
+				rotateZ = 180.0f;
+				translateX = 0.085f;
+				translateY = 0.55f;
+				translateZ = -0.5f;
+				scale = 1.0f;
+			}
 			// Apply transformations
 			getEntityModel().bipedBody.translateRotate(matrixStack);
 			matrixStack.translate(translateX, translateY, translateZ);
-			matrixStack.scale(scaleX, scaleY, scaleZ);
-			matrixStack.rotate(Vector3f.YP.rotationDegrees((float) rotateY));
-			matrixStack.rotate(Vector3f.XP.rotationDegrees((float) rotateX));
-			matrixStack.rotate(Vector3f.ZP.rotationDegrees((float) rotateZ));
+			matrixStack.scale(scale, scale, scale);
+			matrixStack.rotate(Vector3f.YP.rotationDegrees(rotateY));
+			matrixStack.rotate(Vector3f.XP.rotationDegrees(rotateX));
+			matrixStack.rotate(Vector3f.ZP.rotationDegrees(rotateZ));
 			// Render the item
 			ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
 			itemRenderer.renderItem(handcuffStack, ItemCameraTransforms.TransformType.THIRD_PERSON_LEFT_HAND, packedLight, 0xF000F0, matrixStack, buffer);
