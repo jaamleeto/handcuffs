@@ -1,6 +1,8 @@
 
 package net.streavent.handcuffs.item;
 
+import net.streavent.handcuffs.config.HandcuffsClientConfig;
+
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.api.distmarker.Dist;
 
@@ -24,6 +26,8 @@ public class KeyItem extends Item {
 	@OnlyIn(Dist.CLIENT)
 	public void addInformation(ItemStack itemstack, World world, List<ITextComponent> list, ITooltipFlag flag) {
 		super.addInformation(itemstack, world, list, flag);
-		list.add(new TranslationTextComponent("item.handcuffs.key.tooltip"));
+		if (HandcuffsClientConfig.ENABLE_TOOLTIPS.get() && HandcuffsClientConfig.ENABLE_KEY_TOOLTIP.get()) {
+			list.add(new TranslationTextComponent("item.handcuffs.key.tooltip"));
+		}
 	}
 }

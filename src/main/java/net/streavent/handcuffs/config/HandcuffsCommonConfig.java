@@ -12,7 +12,6 @@ public class HandcuffsCommonConfig {
 	public static final ForgeConfigSpec.BooleanValue ATTACK_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue BLOCK_INTERACTION_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue ENTITY_INTERACTION_RESTRICTION;
-	public static final ForgeConfigSpec.BooleanValue ITEM_BREAKING_EFFECTS;
 	public static final ForgeConfigSpec.BooleanValue BLOCK_BREAK_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue CONTAINER_INTERACTION_RESTRICTION;
 	public static final ForgeConfigSpec.BooleanValue HANDCUFFS_COMMAND_USAGE;
@@ -31,7 +30,6 @@ public class HandcuffsCommonConfig {
 		// Attack Restrictions
 		ATTACK_RESTRICTION = BUILDER.comment("Restrict attacking while the player is handcuffed.").define("Restrict Attack While Handcuffed", true);
 		// Effects and Restrictions for Item Breaking and Block Breaking
-		ITEM_BREAKING_EFFECTS = BUILDER.comment("Enable or disable effects when using a key to break the handcuffs.").define("Enable Item Breaking Effects", true);
 		BLOCK_BREAK_RESTRICTION = BUILDER.comment("Restrict block breaking while the player is handcuffed.").define("Restrict Block Breaking", true);
 		// Command and Modifier Settings
 		HANDCUFFS_COMMAND_USAGE = BUILDER.comment("Enable or disable the handcuffs command.").define("Enable Handcuffs Command Usage", true);

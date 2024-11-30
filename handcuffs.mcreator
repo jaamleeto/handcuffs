@@ -93,14 +93,16 @@
   "tab_element_order": {},
   "language_map": {
     "en_us": {
+      "commands.handcuffs.invalidAction": "Invalid action! Use \u0027handcuff\u0027 or \u0027uncuff\u0027",
+      "commands.handcuffs.attributeNotFound": "The player does not have the handcuffed attribute.",
+      "commands.handcuffs.alreadyHandcuffed": "Player %s is already handcuffed.",
+      "commands.handcuffs.notHandcuffed": "Player %s is not handcuffed to perform this action.",
       "item.handcuffs.handcuffs": "§7Handcuffs",
       "commands.generic.player.notFound": "Player not found",
       "item.handcuffs.key.tooltip": "§a§lRight-click §r§7on a player to uncuff them or break the link of two handcuffed players.",
       "commands.handcuffs.success.handcuffed": "%s has been handcuffed",
       "commands.handcuffs.success.uncuffed": "%s has been uncuffed",
       "item.handcuffs.tooltip": "§a§lRight-click §r§7to handcuff a player. A handcuffed player cannot use items, attack, or break blocks. To uncuff, a key item is required.",
-      "commands.handcuffs.invalidAction": "Invalid action! Use \u0027handcuff\u0027 or \u0027uncuff\u0027",
-      "commands.handcuffs.attributeNotFound": "The player does not have the handcuffed attribute.",
       "commands.handcuffs.disabled": "The handcuffs command is currently disabled in the server settings.",
       "item.handcuffs.key": "§7Handcuffs Key"
     }

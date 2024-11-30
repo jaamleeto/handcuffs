@@ -8,9 +8,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.World;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.SoundCategory;
+import net.minecraft.particles.ParticleTypes;
+import net.minecraft.particles.ItemParticleData;
+import net.minecraft.item.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.command.Commands;
@@ -51,21 +56,26 @@ public class HandcuffsCommand {
 		}
 		switch (action.toLowerCase()) {
 			case "handcuff" :
-				if (applyHandcuffedAttribute(player)) {
-					source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.handcuffed", player.getDisplayName().getString()), true);
-					// Reproduce un sonido al aplicar las esposas
-					playHandcuffSound(player);
+				ModifiableAttributeInstance attribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+				if (attribute != null && attribute.getBaseValue() == 0.0D) {
+					if (applyHandcuffedAttribute(player)) {
+						source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.handcuffed", player.getDisplayName().getString()), true);
+						playHandcuffSound(player);
+					}
 				} else {
-					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.attributeNotFound"));
+					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.alreadyHandcuffed", player.getDisplayName().getString()));
 				}
 				break;
 			case "uncuff" :
-				if (removeHandcuffedAttribute(player)) {
-					source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.uncuffed", player.getDisplayName().getString()), true);
-					// Reproduce un sonido al quitar las esposas
-					playUncuffSound(player);
+				ModifiableAttributeInstance atttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+				if (atttribute != null && atttribute.getBaseValue() == 1.0D) {
+					if (removeHandcuffedAttribute(player)) {
+						source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.uncuffed", player.getDisplayName().getString()), true);
+						playUncuffSound(player);
+						generateParticles(player);
+					}
 				} else {
-					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.attributeNotFound"));
+					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.notHandcuffed", player.getDisplayName().getString()));
 				}
 				break;
 			default :
@@ -91,6 +101,22 @@ public class HandcuffsCommand {
 		}
 		attribute.setBaseValue(0.0D);
 		return true;
+	}
+
+	private static void generateParticles(ServerPlayerEntity target) {
+		ItemStack handcuffsStack = new ItemStack(Items.CHAIN);
+		ItemParticleData particleData = new ItemParticleData(ParticleTypes.ITEM, handcuffsStack);
+		World world = target.world;
+		int particleCount = 30;
+		if (world instanceof ServerWorld) {
+			ServerWorld serverWorld = (ServerWorld) world;
+			for (int i = 0; i < particleCount; i++) {
+				double randomOffsetX = (world.rand.nextDouble() - 0.5) * 0.4;
+				double randomOffsetY = (world.rand.nextDouble() * 1.5);
+				double randomOffsetZ = (world.rand.nextDouble() - 0.5) * 0.4;
+				serverWorld.spawnParticle(particleData, target.getPosX() + randomOffsetX, target.getPosY() + randomOffsetY, target.getPosZ() + randomOffsetZ, 1, 0, 0, 0, 0);
+			}
+		}
 	}
 
 	private static void playHandcuffSound(ServerPlayerEntity player) {

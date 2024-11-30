@@ -10,17 +10,19 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.TickEvent;
 
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.World;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.particles.ItemParticleData;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.item.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.ai.attributes.Attributes;
@@ -38,25 +40,108 @@ public class HandcuffsEventsHandler {
 		player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).setBaseValue(1.0D);
 	}
 
+	private static final String HANDCUFF_LINK = "HandcuffLink";
+	private static final String HANDCUFFED = "Handcuffed";
+
 	@SubscribeEvent
 	public static void onHandcuffsUseItem(PlayerInteractEvent.EntityInteract event) {
-		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get())
+		if (!(event.getTarget() instanceof PlayerEntity) || !(event.getPlayer() instanceof PlayerEntity))
 			return;
 		PlayerEntity player = event.getPlayer();
-		ItemStack handcuffItem = player.getHeldItemMainhand();
-		if (event.getTarget() instanceof PlayerEntity) {
-			PlayerEntity targetPlayer = (PlayerEntity) event.getTarget();
-			ModifiableAttributeInstance handcuffedAttribute = targetPlayer.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-			if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D) {
-				player.swingArm(Hand.MAIN_HAND);
-				targetPlayer.swingArm(Hand.MAIN_HAND);
-				targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
-				applyHandcuffedAttribute(targetPlayer);
-				if (!player.abilities.isCreativeMode) {
-					handcuffItem.shrink(1);
+		PlayerEntity targetPlayer = (PlayerEntity) event.getTarget();
+		ItemStack mainHandItem = player.getHeldItemMainhand();
+		ItemStack offHandItem = player.getHeldItemOffhand();
+		if (!mainHandItem.isEmpty() && mainHandItem.getItem() instanceof HandcuffsItem) {
+			boolean isDoubleHandcuff = player.isSneaking() && !offHandItem.isEmpty() && offHandItem.getItem() instanceof HandcuffsItem;
+			UUID linkUuid = UUID.randomUUID();
+			// Aplicar las esposas
+			applyHandcuffed(player, targetPlayer, linkUuid, isDoubleHandcuff);
+			// Animaciones y sonidos
+			player.swingArm(Hand.MAIN_HAND);
+			targetPlayer.swingArm(Hand.MAIN_HAND);
+			targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+			// Reducir ítems si el jugador no está en modo creativo
+			if (!player.isCreative()) {
+				mainHandItem.shrink(1);
+				if (isDoubleHandcuff) {
+					offHandItem.shrink(1);
 				}
-				event.setCanceled(true);
 			}
+			event.setCanceled(true);
+		}
+	}
+
+	private static void applyHandcuffed(PlayerEntity player, PlayerEntity target, UUID linkUuid, boolean isDoubleHandcuff) {
+		if (player == null || target == null || linkUuid == null)
+			return;
+		CompoundNBT playerData = player.getPersistentData();
+		CompoundNBT targetData = target.getPersistentData();
+		// Guardar datos de esposas en ambos jugadores
+		playerData.putString(HANDCUFF_LINK, linkUuid.toString());
+		playerData.putBoolean(HANDCUFFED, true);
+		targetData.putString(HANDCUFF_LINK, linkUuid.toString());
+		targetData.putBoolean(HANDCUFFED, true);
+	}
+
+	@SubscribeEvent
+	public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+		PlayerEntity player = event.getPlayer();
+		breakHandcuffLink(player);
+	}
+
+	@SubscribeEvent
+	public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+		PlayerEntity player = event.getPlayer();
+		breakHandcuffLink(player);
+	}
+
+	@SubscribeEvent
+	public static void onPlayerDeath(LivingDeathEvent event) {
+		if (event.getEntity() instanceof PlayerEntity) {
+			PlayerEntity player = (PlayerEntity) event.getEntity();
+			breakHandcuffLink(player);
+		}
+	}
+
+	@SubscribeEvent
+	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+		PlayerEntity player = event.player;
+		CompoundNBT data = player.getPersistentData();
+		if (!data.contains(HANDCUFF_LINK) || !data.getBoolean(HANDCUFFED))
+			return;
+		UUID linkUuid = UUID.fromString(data.getString(HANDCUFF_LINK));
+		World world = player.getEntityWorld();
+		for (PlayerEntity linkedPlayer : world.getPlayers()) {
+			CompoundNBT linkedData = linkedPlayer.getPersistentData();
+			if (!linkedData.contains(HANDCUFF_LINK) || !linkedData.getBoolean(HANDCUFFED))
+				continue;
+			UUID linkedUuid = UUID.fromString(linkedData.getString(HANDCUFF_LINK));
+			if (linkedUuid.equals(linkUuid)) {
+				double distance = player.getDistance(linkedPlayer);
+				if (distance > 3.0D) {
+					pullPlayerTowards(player, linkedPlayer);
+				}
+				if (distance > 10.0D) {
+					breakHandcuffLink(player);
+					breakHandcuffLink(linkedPlayer);
+				}
+				break;
+			}
+		}
+	}
+
+	private static void pullPlayerTowards(PlayerEntity player, PlayerEntity linkedPlayer) {
+		Vector3d direction = new Vector3d(linkedPlayer.getPosX() - player.getPosX(), linkedPlayer.getPosY() - player.getPosY(), linkedPlayer.getPosZ() - player.getPosZ()).normalize();
+		player.setMotion(player.getMotion().add(direction.scale(0.05))); // Fuerza de atracción
+	}
+
+	private static void breakHandcuffLink(PlayerEntity player) {
+		if (player == null)
+			return;
+		CompoundNBT data = player.getPersistentData();
+		if (data.contains(HANDCUFF_LINK)) {
+			data.remove(HANDCUFF_LINK);
+			data.remove(HANDCUFFED);
 		}
 	}
 
@@ -79,36 +164,12 @@ public class HandcuffsEventsHandler {
 		}
 	}
 
-	private static void generateParticles(PlayerEntity player, LivingEntity target) {
-		ItemStack handcuffsStack = new ItemStack(Items.CHAIN);
-		ItemParticleData particleData = new ItemParticleData(ParticleTypes.ITEM, handcuffsStack);
-		World world = player.world;
-		double yaw = Math.toRadians(target.rotationYaw);
-		double pitch = Math.toRadians(target.rotationPitch);
-		double offsetX = -Math.sin(yaw);
-		double offsetZ = Math.cos(yaw);
-		double offsetY = -Math.sin(pitch);
-		int particleCount = 10;
-		if (world instanceof ServerWorld) {
-			ServerWorld serverWorld = (ServerWorld) world;
-			for (int i = 0; i < particleCount; i++) {
-				double randomOffsetX = (world.rand.nextDouble() - 0.5) * 0.2;
-				double randomOffsetY = (world.rand.nextDouble() - 0.5) * 0.2;
-				double randomOffsetZ = (world.rand.nextDouble() - 0.5) * 0.2;
-				serverWorld.spawnParticle(particleData, target.getPosX() + offsetX * 0.5 + randomOffsetX, target.getPosY() + target.getEyeHeight() * 0.75 + offsetY * 0.5 + randomOffsetY, target.getPosZ() + offsetZ * 0.5 + randomOffsetZ, 0, 0.1, 0, 0,
-						0);
-			}
-		}
-	}
-
 	@SubscribeEvent
 	public static void onHandcuffsUseItem(PlayerInteractEvent.RightClickItem event) {
-		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get())
-			return;
 		PlayerEntity player = event.getPlayer();
 		ItemStack handcuffItem = player.getHeldItemMainhand();
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D) {
+		if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D && HandcuffsCommonConfig.HANDCUFFS_USAGE.get()) {
 			player.swingArm(Hand.MAIN_HAND);
 			player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
 			applyHandcuffedAttribute(player);
@@ -208,13 +269,9 @@ public class HandcuffsEventsHandler {
 
 	@SubscribeEvent
 	public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
-		if (event.getPlayer().world.isRemote)
-			return;
-		if (!HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get())
-			return;
 		PlayerEntity player = event.getPlayer();
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (isPlayerHandcuffed(handcuffedAttribute)) {
+		if (isPlayerHandcuffed(handcuffedAttribute) && HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get()) {
 			event.setNewSpeed(0.0f);
 		} else {
 			event.setNewSpeed(event.getOriginalSpeed());
@@ -223,22 +280,18 @@ public class HandcuffsEventsHandler {
 
 	@SubscribeEvent
 	public static void onPlayerLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-		if (!HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get())
-			return;
 		PlayerEntity player = event.getPlayer();
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (isPlayerHandcuffed(handcuffedAttribute)) {
+		if (isPlayerHandcuffed(handcuffedAttribute) && HandcuffsCommonConfig.BLOCK_BREAK_RESTRICTION.get()) {
 			event.setCanceled(true);
 		}
 	}
 
 	@SubscribeEvent
 	public static void onPlayerAttack(AttackEntityEvent event) {
-		if (!HandcuffsCommonConfig.ATTACK_RESTRICTION.get())
-			return;
 		PlayerEntity player = event.getPlayer();
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (isPlayerHandcuffed(handcuffedAttribute)) {
+		if (isPlayerHandcuffed(handcuffedAttribute) && HandcuffsCommonConfig.ATTACK_RESTRICTION.get()) {
 			event.setCanceled(true);
 		}
 	}
@@ -251,22 +304,24 @@ public class HandcuffsEventsHandler {
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 		if (isPlayerHandcuffed(handcuffedAttribute)) {
 			Block block = event.getWorld().getBlockState(event.getPos()).getBlock();
-			boolean isContainer = block instanceof IInventory || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL || block == Blocks.ENDER_CHEST;
-			if (HandcuffsCommonConfig.CONTAINER_INTERACTION_RESTRICTION.get() && isContainer) {
+			boolean isContainer = block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL || block == Blocks.ENDER_CHEST;
+			if (isContainer) {
+				if (HandcuffsCommonConfig.CONTAINER_INTERACTION_RESTRICTION.get()) {
+					event.setCanceled(true);
+				} else {
+					event.setCanceled(false);
+				}
+			} else {
 				event.setCanceled(true);
-			} else if (!HandcuffsCommonConfig.CONTAINER_INTERACTION_RESTRICTION.get()) {
-				event.setCanceled(false);
 			}
 		}
 	}
 
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		if (!HandcuffsCommonConfig.ENTITY_INTERACTION_RESTRICTION.get())
-			return;
 		PlayerEntity player = event.getPlayer();
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (isPlayerHandcuffed(handcuffedAttribute)) {
+		if (isPlayerHandcuffed(handcuffedAttribute) && HandcuffsCommonConfig.ENTITY_INTERACTION_RESTRICTION.get()) {
 			event.setCanceled(true);
 		}
 	}
@@ -278,6 +333,28 @@ public class HandcuffsEventsHandler {
 		if (isPlayerHandcuffed(handcuffedAttribute)) {
 			if (!(player.getHeldItemMainhand().getItem() instanceof KeyItem)) {
 				event.setCanceled(true);
+			}
+		}
+	}
+
+	private static void generateParticles(PlayerEntity player, LivingEntity target) {
+		ItemStack handcuffsStack = new ItemStack(Items.CHAIN);
+		ItemParticleData particleData = new ItemParticleData(ParticleTypes.ITEM, handcuffsStack);
+		World world = player.world;
+		double yaw = Math.toRadians(target.rotationYaw);
+		double pitch = Math.toRadians(target.rotationPitch);
+		double offsetX = -Math.sin(yaw);
+		double offsetZ = Math.cos(yaw);
+		double offsetY = -Math.sin(pitch);
+		int particleCount = 10;
+		if (world instanceof ServerWorld) {
+			ServerWorld serverWorld = (ServerWorld) world;
+			for (int i = 0; i < particleCount; i++) {
+				double randomOffsetX = (world.rand.nextDouble() - 0.5) * 0.2;
+				double randomOffsetY = (world.rand.nextDouble() - 0.5) * 0.2;
+				double randomOffsetZ = (world.rand.nextDouble() - 0.5) * 0.2;
+				serverWorld.spawnParticle(particleData, target.getPosX() + offsetX * 0.5 + randomOffsetX, target.getPosY() + target.getEyeHeight() * 0.75 + offsetY * 0.5 + randomOffsetY, target.getPosZ() + offsetZ * 0.5 + randomOffsetZ, 0, 0.1, 0, 0,
+						0);
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 package net.streavent.handcuffs.client;
 
 import net.streavent.handcuffs.init.HandcuffsModItems;
+import net.streavent.handcuffs.config.HandcuffsClientConfig;
 import net.streavent.handcuffs.HandcuffsAttributes;
 
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -34,7 +35,7 @@ public class HandcuffsLayer extends LayerRenderer<AbstractClientPlayerEntity, Pl
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 		if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0) {
 			matrixStack.push();
-			// Define default values
+			// Default values
 			float rotateX = -90.0f;
 			float rotateY = 0.0f;
 			float rotateZ = 180.0f;
@@ -42,16 +43,19 @@ public class HandcuffsLayer extends LayerRenderer<AbstractClientPlayerEntity, Pl
 			float translateY = 0.71f;
 			float translateZ = -0.15f;
 			float scale = 1.0f;
-			// Adjust values if the player is crouching
+			// Adjust if crouching
 			if (player.isCrouching()) {
 				rotateX = -120.0f;
-				rotateY = 0.0f;
-				rotateZ = 180.0f;
-				translateX = 0.085f;
 				translateY = 0.55f;
 				translateZ = -0.5f;
-				scale = 1.0f;
 			}
+			// Apply transformations from config (sum to the default values)
+			rotateX += HandcuffsClientConfig.ROTATE_X.get();
+			rotateY += HandcuffsClientConfig.ROTATE_Y.get();
+			rotateZ += HandcuffsClientConfig.ROTATE_Z.get();
+			translateX += HandcuffsClientConfig.TRANSLATE_X.get();
+			translateY += HandcuffsClientConfig.TRANSLATE_Y.get();
+			translateZ += HandcuffsClientConfig.TRANSLATE_Z.get();
 			// Apply transformations
 			getEntityModel().bipedBody.translateRotate(matrixStack);
 			matrixStack.translate(translateX, translateY, translateZ);

@@ -13,6 +13,7 @@ import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.AnimationState;
 
+import net.streavent.handcuffs.config.HandcuffsClientConfig;
 import net.streavent.handcuffs.client.HandcuffsRender;
 
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -78,6 +79,8 @@ public class HandcuffsItem extends Item implements IAnimatable, ISyncable {
 	@OnlyIn(Dist.CLIENT)
 	public void addInformation(ItemStack itemstack, World world, List<ITextComponent> list, ITooltipFlag flag) {
 		super.addInformation(itemstack, world, list, flag);
-		list.add(new TranslationTextComponent("item.handcuffs.tooltip"));
+		if (HandcuffsClientConfig.ENABLE_TOOLTIPS.get() && HandcuffsClientConfig.ENABLE_HANDCUFFS_TOOLTIP.get()) {
+			list.add(new TranslationTextComponent("item.handcuffs.tooltip"));
+		}
 	}
 }
