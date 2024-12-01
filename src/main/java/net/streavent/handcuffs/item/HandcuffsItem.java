@@ -81,6 +81,7 @@ public class HandcuffsItem extends Item implements IAnimatable, ISyncable {
 		super.addInformation(itemstack, world, list, flag);
 		if (HandcuffsClientConfig.ENABLE_TOOLTIPS.get() && HandcuffsClientConfig.ENABLE_HANDCUFFS_TOOLTIP.get()) {
 			list.add(new TranslationTextComponent("item.handcuffs.tooltip"));
+			list.add(new TranslationTextComponent("item.handcuffs.link_tooltip"));
 		}
 	}
 }

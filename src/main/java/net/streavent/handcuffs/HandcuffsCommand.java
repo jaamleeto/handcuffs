@@ -8,18 +8,16 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.World;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.SoundCategory;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.particles.ItemParticleData;
-import net.minecraft.item.Items;
-import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
+import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.command.Commands;
 import net.minecraft.command.CommandSource;
+
+import java.util.UUID;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.CommandDispatcher;
@@ -56,26 +54,20 @@ public class HandcuffsCommand {
 		}
 		switch (action.toLowerCase()) {
 			case "handcuff" :
-				ModifiableAttributeInstance attribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-				if (attribute != null && attribute.getBaseValue() == 0.0D) {
-					if (applyHandcuffedAttribute(player)) {
-						source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.handcuffed", player.getDisplayName().getString()), true);
-						playHandcuffSound(player);
-					}
+				if (applyHandcuffedAttribute(player)) {
+					source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.handcuffed", player.getDisplayName().getString()), true);
+					playHandcuffSound(player);
 				} else {
-					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.alreadyHandcuffed", player.getDisplayName().getString()));
+					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.attributeNotFound"));
 				}
 				break;
 			case "uncuff" :
-				ModifiableAttributeInstance atttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-				if (atttribute != null && atttribute.getBaseValue() == 1.0D) {
-					if (removeHandcuffedAttribute(player)) {
-						source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.uncuffed", player.getDisplayName().getString()), true);
-						playUncuffSound(player);
-						generateParticles(player);
-					}
+				if (removeHandcuffedAttribute(player)) {
+					source.sendFeedback(new TranslationTextComponent("commands.handcuffs.success.uncuffed", player.getDisplayName().getString()), true);
+					playUncuffSound(player);
+					removeSharedModifier(player);
 				} else {
-					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.notHandcuffed", player.getDisplayName().getString()));
+					source.sendErrorMessage(new TranslationTextComponent("commands.handcuffs.attributeNotFound"));
 				}
 				break;
 			default :
@@ -103,19 +95,16 @@ public class HandcuffsCommand {
 		return true;
 	}
 
-	private static void generateParticles(ServerPlayerEntity target) {
-		ItemStack handcuffsStack = new ItemStack(Items.CHAIN);
-		ItemParticleData particleData = new ItemParticleData(ParticleTypes.ITEM, handcuffsStack);
-		World world = target.world;
-		int particleCount = 30;
-		if (world instanceof ServerWorld) {
-			ServerWorld serverWorld = (ServerWorld) world;
-			for (int i = 0; i < particleCount; i++) {
-				double randomOffsetX = (world.rand.nextDouble() - 0.5) * 0.4;
-				double randomOffsetY = (world.rand.nextDouble() * 1.5);
-				double randomOffsetZ = (world.rand.nextDouble() - 0.5) * 0.4;
-				serverWorld.spawnParticle(particleData, target.getPosX() + randomOffsetX, target.getPosY() + randomOffsetY, target.getPosZ() + randomOffsetZ, 1, 0, 0, 0, 0);
+	public static void removeSharedModifier(ServerPlayerEntity player) {
+		if (player.getPersistentData().contains("HandcuffUUID")) {
+			String uuidString = player.getPersistentData().getString("HandcuffUUID");
+			UUID modifierUUID = UUID.fromString(uuidString);
+			ModifiableAttributeInstance attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
+			if (attribute != null && attribute.getModifier(modifierUUID) != null) {
+				attribute.removeModifier(modifierUUID);
 			}
+			player.getPersistentData().remove("HandcuffUUID");
+			player.getPersistentData().remove("HandcuffLinked");
 		}
 	}
 

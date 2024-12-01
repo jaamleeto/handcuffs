@@ -95,8 +95,9 @@
     "en_us": {
       "commands.handcuffs.invalidAction": "Invalid action! Use \u0027handcuff\u0027 or \u0027uncuff\u0027",
       "commands.handcuffs.attributeNotFound": "The player does not have the handcuffed attribute.",
-      "commands.handcuffs.alreadyHandcuffed": "Player %s is already handcuffed.",
       "commands.handcuffs.notHandcuffed": "Player %s is not handcuffed to perform this action.",
+      "commands.handcuffs.alreadyHandcuffed": "Player %s is already handcuffed.",
+      "item.handcuffs.link_tooltip": "§r§7You can link yourself to another player by using two handcuffs in both hands and right-clicking on them while crouching.",
       "item.handcuffs.handcuffs": "§7Handcuffs",
       "commands.generic.player.notFound": "Player not found",
       "item.handcuffs.key.tooltip": "§a§lRight-click §r§7on a player to uncuff them or break the link of two handcuffed players.",

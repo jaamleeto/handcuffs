@@ -10,7 +10,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.TickEvent;
 
 import net.minecraft.world.server.ServerWorld;
@@ -20,7 +19,6 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.particles.ItemParticleData;
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.item.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,10 +27,12 @@ import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.Attribute;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Block;
 
 import java.util.UUID;
+import java.util.Comparator;
 
 @Mod.EventBusSubscriber
 public class HandcuffsEventsHandler {
@@ -40,113 +40,60 @@ public class HandcuffsEventsHandler {
 		player.getAttribute(HandcuffsAttributes.HANDCUFFED.get()).setBaseValue(1.0D);
 	}
 
-	private static final String HANDCUFF_LINK = "HandcuffLink";
-	private static final String HANDCUFFED = "Handcuffed";
-
 	@SubscribeEvent
-	public static void onHandcuffsUseItem(PlayerInteractEvent.EntityInteract event) {
-		if (!(event.getTarget() instanceof PlayerEntity) || !(event.getPlayer() instanceof PlayerEntity))
-			return;
+	public static void onEntityHandcuffInteract(PlayerInteractEvent.EntityInteract event) {
 		PlayerEntity player = event.getPlayer();
-		PlayerEntity targetPlayer = (PlayerEntity) event.getTarget();
-		ItemStack mainHandItem = player.getHeldItemMainhand();
-		ItemStack offHandItem = player.getHeldItemOffhand();
-		if (!mainHandItem.isEmpty() && mainHandItem.getItem() instanceof HandcuffsItem) {
-			boolean isDoubleHandcuff = player.isSneaking() && !offHandItem.isEmpty() && offHandItem.getItem() instanceof HandcuffsItem;
-			UUID linkUuid = UUID.randomUUID();
-			// Aplicar las esposas
-			applyHandcuffed(player, targetPlayer, linkUuid, isDoubleHandcuff);
-			// Animaciones y sonidos
-			player.swingArm(Hand.MAIN_HAND);
-			targetPlayer.swingArm(Hand.MAIN_HAND);
-			targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
-			// Reducir ítems si el jugador no está en modo creativo
-			if (!player.isCreative()) {
-				mainHandItem.shrink(1);
-				if (isDoubleHandcuff) {
-					offHandItem.shrink(1);
-				}
+		Entity targetEntity = event.getTarget();
+		if (player.isCrouching() && targetEntity instanceof PlayerEntity) {
+			PlayerEntity targetPlayer = (PlayerEntity) targetEntity;
+			if (player.getPersistentData().contains("HandcuffLinked") || targetPlayer.getPersistentData().contains("HandcuffLinked")) {
+				return;
 			}
-			event.setCanceled(true);
-		}
-	}
-
-	private static void applyHandcuffed(PlayerEntity player, PlayerEntity target, UUID linkUuid, boolean isDoubleHandcuff) {
-		if (player == null || target == null || linkUuid == null)
-			return;
-		CompoundNBT playerData = player.getPersistentData();
-		CompoundNBT targetData = target.getPersistentData();
-		// Guardar datos de esposas en ambos jugadores
-		playerData.putString(HANDCUFF_LINK, linkUuid.toString());
-		playerData.putBoolean(HANDCUFFED, true);
-		targetData.putString(HANDCUFF_LINK, linkUuid.toString());
-		targetData.putBoolean(HANDCUFFED, true);
-	}
-
-	@SubscribeEvent
-	public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-		PlayerEntity player = event.getPlayer();
-		breakHandcuffLink(player);
-	}
-
-	@SubscribeEvent
-	public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-		PlayerEntity player = event.getPlayer();
-		breakHandcuffLink(player);
-	}
-
-	@SubscribeEvent
-	public static void onPlayerDeath(LivingDeathEvent event) {
-		if (event.getEntity() instanceof PlayerEntity) {
-			PlayerEntity player = (PlayerEntity) event.getEntity();
-			breakHandcuffLink(player);
-		}
-	}
-
-	@SubscribeEvent
-	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-		PlayerEntity player = event.player;
-		CompoundNBT data = player.getPersistentData();
-		if (!data.contains(HANDCUFF_LINK) || !data.getBoolean(HANDCUFFED))
-			return;
-		UUID linkUuid = UUID.fromString(data.getString(HANDCUFF_LINK));
-		World world = player.getEntityWorld();
-		for (PlayerEntity linkedPlayer : world.getPlayers()) {
-			CompoundNBT linkedData = linkedPlayer.getPersistentData();
-			if (!linkedData.contains(HANDCUFF_LINK) || !linkedData.getBoolean(HANDCUFFED))
-				continue;
-			UUID linkedUuid = UUID.fromString(linkedData.getString(HANDCUFF_LINK));
-			if (linkedUuid.equals(linkUuid)) {
-				double distance = player.getDistance(linkedPlayer);
-				if (distance > 3.0D) {
-					pullPlayerTowards(player, linkedPlayer);
+			ItemStack handcuffItemMain = player.getHeldItemMainhand();
+			ItemStack handcuffItemOff = player.getHeldItemOffhand();
+			if (handcuffItemMain.getItem() instanceof HandcuffsItem && handcuffItemOff.getItem() instanceof HandcuffsItem) {
+				String combinedNames = player.getName().getString() + targetPlayer.getName().getString();
+				UUID sharedModifierUUID = UUID.nameUUIDFromBytes(combinedNames.getBytes());
+				addAttributeModifier(player, Attributes.MOVEMENT_SPEED, sharedModifierUUID, 0.0D, AttributeModifier.Operation.ADDITION);
+				addAttributeModifier(targetPlayer, Attributes.MOVEMENT_SPEED, sharedModifierUUID, 0.0D, AttributeModifier.Operation.ADDITION);
+				applyHandcuffedAttribute(player);
+				applyHandcuffedAttribute(targetPlayer);
+				player.getPersistentData().putString("HandcuffUUID", sharedModifierUUID.toString());
+				targetPlayer.getPersistentData().putString("HandcuffUUID", sharedModifierUUID.toString());
+				player.getPersistentData().putBoolean("HandcuffLinked", true);
+				targetPlayer.getPersistentData().putBoolean("HandcuffLinked", true);
+				targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+				player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+				player.swingArm(Hand.MAIN_HAND);
+				targetPlayer.swingArm(Hand.MAIN_HAND);
+				if (!player.abilities.isCreativeMode) {
+					player.setHeldItem(Hand.MAIN_HAND, ItemStack.EMPTY);
+					player.setHeldItem(Hand.OFF_HAND, ItemStack.EMPTY);
 				}
-				if (distance > 10.0D) {
-					breakHandcuffLink(player);
-					breakHandcuffLink(linkedPlayer);
-				}
-				break;
 			}
 		}
 	}
 
-	private static void pullPlayerTowards(PlayerEntity player, PlayerEntity linkedPlayer) {
-		Vector3d direction = new Vector3d(linkedPlayer.getPosX() - player.getPosX(), linkedPlayer.getPosY() - player.getPosY(), linkedPlayer.getPosZ() - player.getPosZ()).normalize();
-		player.setMotion(player.getMotion().add(direction.scale(0.05))); // Fuerza de atracción
+	private static void addBindAttributeModifier(PlayerEntity player, Attribute attribute, UUID uuid, double amount, AttributeModifier.Operation operation) {
+		AttributeModifier modifier = new AttributeModifier(uuid, "Handcuffed Speed Modifier", amount, operation);
+		player.getAttribute(attribute).applyPersistentModifier(modifier);
 	}
 
-	private static void breakHandcuffLink(PlayerEntity player) {
-		if (player == null)
-			return;
-		CompoundNBT data = player.getPersistentData();
-		if (data.contains(HANDCUFF_LINK)) {
-			data.remove(HANDCUFF_LINK);
-			data.remove(HANDCUFFED);
+	public static void removeSharedModifier(PlayerEntity player) {
+		if (player.getPersistentData().contains("HandcuffUUID")) {
+			String uuidString = player.getPersistentData().getString("HandcuffUUID");
+			UUID modifierUUID = UUID.fromString(uuidString);
+			ModifiableAttributeInstance attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
+			if (attribute != null && attribute.getModifier(modifierUUID) != null) {
+				attribute.removeModifier(modifierUUID);
+			}
+			player.getPersistentData().remove("HandcuffUUID");
+			player.getPersistentData().remove("HandcuffLinked");
 		}
 	}
 
 	@SubscribeEvent
-	public static void onKeyItemUse(PlayerInteractEvent.EntityInteract event) {
+	public static void onKeyItemeEntityUse(PlayerInteractEvent.EntityInteract event) {
 		PlayerEntity player = event.getPlayer();
 		ItemStack keyItem = player.getHeldItemMainhand();
 		if (event.getTarget() instanceof PlayerEntity) {
@@ -154,27 +101,14 @@ public class HandcuffsEventsHandler {
 			ModifiableAttributeInstance handcuffedAttribute = targetPlayer.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 			if (keyItem.getItem() instanceof KeyItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 				handcuffedAttribute.setBaseValue(0.0D);
+				removeSharedModifier(player);
+				removeSharedModifier(targetPlayer);
 				targetPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0F, 1.0F);
 				generateParticles(player, targetPlayer);
 				if (!player.abilities.isCreativeMode) {
 					keyItem.shrink(1);
 				}
 				event.setCanceled(true);
-			}
-		}
-	}
-
-	@SubscribeEvent
-	public static void onHandcuffsUseItem(PlayerInteractEvent.RightClickItem event) {
-		PlayerEntity player = event.getPlayer();
-		ItemStack handcuffItem = player.getHeldItemMainhand();
-		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
-		if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D && HandcuffsCommonConfig.HANDCUFFS_USAGE.get()) {
-			player.swingArm(Hand.MAIN_HAND);
-			player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
-			applyHandcuffedAttribute(player);
-			if (!player.abilities.isCreativeMode) {
-				handcuffItem.shrink(1);
 			}
 		}
 	}
@@ -187,12 +121,111 @@ public class HandcuffsEventsHandler {
 			ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 			if (handcuffedAttribute != null && handcuffedAttribute.getValue() == 1.0D) {
 				handcuffedAttribute.setBaseValue(0.0D);
+				removeSharedModifier(player);
 				player.swingArm(Hand.MAIN_HAND);
 				player.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0F, 1.0F);
 				generateParticles(player, player);
 				if (!player.abilities.isCreativeMode) {
 					keyItem.shrink(1);
 				}
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void onPullPlayerTick(TickEvent.PlayerTickEvent event) {
+		PlayerEntity player = event.player;
+		if (player.world.isRemote) {
+			return;
+		}
+		if (player.getPersistentData().contains("HandcuffUUID")) {
+			String handcuffUUID = player.getPersistentData().getString("HandcuffUUID");
+			UUID sharedUUID = UUID.fromString(handcuffUUID);
+			PlayerEntity linkedPlayer = player.world.getEntitiesWithinAABB(PlayerEntity.class, player.getBoundingBox().grow(20), e -> e != player && handcuffUUID.equals(e.getPersistentData().getString("HandcuffUUID"))).stream()
+					.min(Comparator.comparingDouble(e -> e.getDistance(player))).orElse(null);
+			if (linkedPlayer != null) {
+				pullPlayersTogether(player, linkedPlayer);
+			}
+		}
+	}
+
+	private static void pullPlayersTogether(PlayerEntity player, PlayerEntity linkedPlayer) {
+		double distance = player.getDistance(linkedPlayer);
+		double minDistance = 3.0;
+		double maxDistance = 10.0;
+		double attractionStrength = 0.1;
+		if (distance > minDistance) {
+			Vector3d direction = new Vector3d(linkedPlayer.getPosX() - player.getPosX(), linkedPlayer.getPosY() - player.getPosY(), linkedPlayer.getPosZ() - player.getPosZ()).normalize();
+			double factor = Math.min(1.0, (distance - minDistance) / (maxDistance - minDistance));
+			direction = direction.scale(attractionStrength * factor);
+			updatePlayerMotion(player, direction);
+			updatePlayerMotion(linkedPlayer, direction.scale(-1));
+		}
+	}
+
+	private static void updatePlayerMotion(PlayerEntity player, Vector3d motion) {
+		Vector3d currentMotion = player.getMotion();
+		Vector3d newMotion = currentMotion.add(motion);
+		double smoothFactor = 0.5;
+		newMotion = currentMotion.add(newMotion.subtract(currentMotion).scale(smoothFactor));
+		player.setMotion(newMotion);
+		player.velocityChanged = true;
+	}
+
+	private static PlayerEntity getNearestPlayer(PlayerEntity entityIn) {
+		return entityIn.world.getEntitiesWithinAABB(PlayerEntity.class, entityIn.getBoundingBox().grow(20), e -> e != entityIn).stream().min(Comparator.comparingDouble(e -> e.getDistance(entityIn))).orElse(null);
+	}
+
+	private static boolean isHandcuffedActionInProgress = false;
+
+	@SubscribeEvent
+	public static void onHandcuffsEntityUseItem(PlayerInteractEvent.EntityInteract event) {
+		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get()) {
+			return;
+		}
+		PlayerEntity player = event.getPlayer();
+		ItemStack handcuffItem = player.getHeldItemMainhand();
+		if (player.getHeldItemOffhand().getItem() instanceof HandcuffsItem || player.getHeldItemOffhand().getItem() instanceof KeyItem) {
+			return;
+		}
+		if (event.getTarget() instanceof PlayerEntity) {
+			PlayerEntity targetPlayer = (PlayerEntity) event.getTarget();
+			ModifiableAttributeInstance handcuffedAttribute = targetPlayer.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+			if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D) {
+				isHandcuffedActionInProgress = true;
+				player.swingArm(Hand.MAIN_HAND);
+				targetPlayer.swingArm(Hand.MAIN_HAND);
+				targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+				applyHandcuffedAttribute(targetPlayer);
+				if (!player.abilities.isCreativeMode) {
+					handcuffItem.shrink(1);
+				}
+				event.setCanceled(true);
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void onHandcuffsUseItem(PlayerInteractEvent.RightClickItem event) {
+		if (!HandcuffsCommonConfig.HANDCUFFS_USAGE.get()) {
+			return;
+		}
+		if (isHandcuffedActionInProgress) {
+			isHandcuffedActionInProgress = false;
+			return;
+		}
+		PlayerEntity player = event.getPlayer();
+		ItemStack handcuffItem = player.getHeldItemMainhand();
+		if (player.getHeldItemOffhand().getItem() instanceof HandcuffsItem || player.getHeldItemOffhand().getItem() instanceof KeyItem) {
+			return;
+		}
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D) {
+			player.swingArm(Hand.MAIN_HAND);
+			player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+			applyHandcuffedAttribute(player);
+			if (!player.abilities.isCreativeMode) {
+				handcuffItem.shrink(1);
 			}
 		}
 	}
