@@ -138,12 +138,18 @@ public class HandcuffsEventsHandler {
 		if (player.world.isRemote) {
 			return;
 		}
+		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
+		if (handcuffedAttribute != null && !isPlayerHandcuffed(handcuffedAttribute)) {
+			removeSharedModifier(player);
+		}
 		if (player.getPersistentData().contains("HandcuffUUID")) {
 			String handcuffUUID = player.getPersistentData().getString("HandcuffUUID");
 			UUID sharedUUID = UUID.fromString(handcuffUUID);
-			PlayerEntity linkedPlayer = player.world.getEntitiesWithinAABB(PlayerEntity.class, player.getBoundingBox().grow(20), e -> e != player && handcuffUUID.equals(e.getPersistentData().getString("HandcuffUUID"))).stream()
-					.min(Comparator.comparingDouble(e -> e.getDistance(player))).orElse(null);
-			if (linkedPlayer != null) {
+			PlayerEntity linkedPlayer = player.world.getEntitiesWithinAABB(PlayerEntity.class, player.getBoundingBox().grow(50), e -> e != player && handcuffUUID.equals(e.getPersistentData().getString("HandcuffUUID"))).stream()
+					.filter(e -> e.isAlive()).min(Comparator.comparingDouble(e -> e.getDistance(player))).orElse(null);
+			if (linkedPlayer == null) {
+				removeSharedModifier(player);
+			} else {
 				pullPlayersTogether(player, linkedPlayer);
 			}
 		}
@@ -154,8 +160,12 @@ public class HandcuffsEventsHandler {
 		double minDistance = 3.0;
 		double maxDistance = 10.0;
 		double attractionStrength = 0.1;
+		double flightFactor = 1.5;
 		if (distance > minDistance) {
 			Vector3d direction = new Vector3d(linkedPlayer.getPosX() - player.getPosX(), linkedPlayer.getPosY() - player.getPosY(), linkedPlayer.getPosZ() - player.getPosZ()).normalize();
+			if (player.abilities.isFlying || linkedPlayer.abilities.isFlying) {
+				attractionStrength *= flightFactor;
+			}
 			double factor = Math.min(1.0, (distance - minDistance) / (maxDistance - minDistance));
 			direction = direction.scale(attractionStrength * factor);
 			updatePlayerMotion(player, direction);
@@ -168,6 +178,9 @@ public class HandcuffsEventsHandler {
 		Vector3d newMotion = currentMotion.add(motion);
 		double smoothFactor = 0.5;
 		newMotion = currentMotion.add(newMotion.subtract(currentMotion).scale(smoothFactor));
+		if (player.abilities.isFlying) {
+			newMotion = newMotion.add(0, 0.1, 0);
+		}
 		player.setMotion(newMotion);
 		player.velocityChanged = true;
 	}

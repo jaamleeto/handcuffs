@@ -103,7 +103,7 @@
       "item.handcuffs.key.tooltip": "§a§lRight-click §r§7on a player to uncuff them or break the link of two handcuffed players.",
       "commands.handcuffs.success.handcuffed": "%s has been handcuffed",
       "commands.handcuffs.success.uncuffed": "%s has been uncuffed",
-      "item.handcuffs.tooltip": "§a§lRight-click §r§7to handcuff a player. A handcuffed player cannot use items, attack, or break blocks. To uncuff, a key item is required.",
+      "item.handcuffs.tooltip": "§a§lRight-click §r§7to handcuff a player. A handcuffed player cannot use items, attack, or break blocks. To uncuff, a key item is required and the actions will only be done in the mainhand.",
       "commands.handcuffs.disabled": "The handcuffs command is currently disabled in the server settings.",
       "item.handcuffs.key": "§7Handcuffs Key"
     }
