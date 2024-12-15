@@ -3,6 +3,8 @@ package net.streavent.handcuffs;
 
 import net.streavent.handcuffs.item.KeyItem;
 import net.streavent.handcuffs.item.HandcuffsItem;
+import net.streavent.handcuffs.init.HandcuffsModEntities;
+import net.streavent.handcuffs.entity.HandpointEntity;
 import net.streavent.handcuffs.config.HandcuffsCommonConfig;
 
 import net.minecraftforge.fml.common.Mod;
@@ -16,6 +18,7 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.World;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.SoundEvents;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.Hand;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.particles.ItemParticleData;
@@ -45,6 +48,7 @@ public class HandcuffsEventsHandler {
 		PlayerEntity player = event.getPlayer();
 		Entity targetEntity = event.getTarget();
 		if (player.isCrouching() && targetEntity instanceof PlayerEntity) {
+			World world = player.world;
 			PlayerEntity targetPlayer = (PlayerEntity) targetEntity;
 			if (player.getPersistentData().contains("HandcuffLinked") || targetPlayer.getPersistentData().contains("HandcuffLinked")) {
 				return;
@@ -62,8 +66,9 @@ public class HandcuffsEventsHandler {
 				targetPlayer.getPersistentData().putString("HandcuffUUID", sharedModifierUUID.toString());
 				player.getPersistentData().putBoolean("HandcuffLinked", true);
 				targetPlayer.getPersistentData().putBoolean("HandcuffLinked", true);
-				targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
-				player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+				world.playSound(null, player.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 1.0F, 1.0F);
+				world.playSound(null, targetPlayer.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 1.0F, 1.0F);
+				spawnHandpointEntity(event.getPlayer(), targetPlayer);
 				player.swingArm(Hand.MAIN_HAND);
 				targetPlayer.swingArm(Hand.MAIN_HAND);
 				if (!player.abilities.isCreativeMode) {
@@ -74,18 +79,44 @@ public class HandcuffsEventsHandler {
 		}
 	}
 
-	private static void addBindAttributeModifier(PlayerEntity player, Attribute attribute, UUID uuid, double amount, AttributeModifier.Operation operation) {
-		AttributeModifier modifier = new AttributeModifier(uuid, "Handcuffed Speed Modifier", amount, operation);
-		player.getAttribute(attribute).applyPersistentModifier(modifier);
+	private static void spawnHandpointEntity(PlayerEntity player, Entity targetEntity) {
+		if (targetEntity.getEntityWorld() instanceof ServerWorld) {
+			ServerWorld world = (ServerWorld) targetEntity.getEntityWorld();
+			HandpointEntity handpoint = HandcuffsModEntities.HANDPOINT.get().create(world);
+			if (handpoint != null) {
+				handpoint.setPosition(targetEntity.getPosX(), targetEntity.getPosY(), targetEntity.getPosZ());
+				handpoint.setNoAI(true);
+				handpoint.setInvulnerable(true);
+				handpoint.setSilent(true);
+				handpoint.getAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get()).setBaseValue(player.getEntityId());
+				handpoint.getPersistentData().putInt("LinkedPlayerID", player.getEntityId());
+				handpoint.getPersistentData().putInt("TargetPosID", targetEntity.getEntityId());
+				player.getPersistentData().putInt("LinkedHandpointID", handpoint.getEntityId());
+				targetEntity.getPersistentData().putInt("LinkedHandpointID", handpoint.getEntityId());
+				world.addEntity(handpoint);
+			}
+		}
 	}
 
 	public static void removeSharedModifier(PlayerEntity player) {
+		World world = player.world;
 		if (player.getPersistentData().contains("HandcuffUUID")) {
 			String uuidString = player.getPersistentData().getString("HandcuffUUID");
 			UUID modifierUUID = UUID.fromString(uuidString);
 			ModifiableAttributeInstance attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
 			if (attribute != null && attribute.getModifier(modifierUUID) != null) {
 				attribute.removeModifier(modifierUUID);
+			}
+			if (player.getAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get()) != null) {
+				player.getAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get()).setBaseValue(0);
+			}
+			if (player.getPersistentData().contains("LinkedHandpointID")) {
+				int handpointId = player.getPersistentData().getInt("LinkedHandpointID");
+				Entity handpointEntity = world.getEntityByID(handpointId);
+				if (handpointEntity instanceof HandpointEntity) {
+					handpointEntity.remove();
+				}
+				player.getPersistentData().remove("LinkedHandpointID");
 			}
 			player.getPersistentData().remove("HandcuffUUID");
 			player.getPersistentData().remove("HandcuffLinked");
@@ -103,7 +134,8 @@ public class HandcuffsEventsHandler {
 				handcuffedAttribute.setBaseValue(0.0D);
 				removeSharedModifier(player);
 				removeSharedModifier(targetPlayer);
-				targetPlayer.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0F, 1.0F);
+				World world = targetPlayer.world;
+				world.playSound(null, targetPlayer.getPosition(), SoundEvents.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 				generateParticles(player, targetPlayer);
 				if (!player.abilities.isCreativeMode) {
 					keyItem.shrink(1);
@@ -123,7 +155,8 @@ public class HandcuffsEventsHandler {
 				handcuffedAttribute.setBaseValue(0.0D);
 				removeSharedModifier(player);
 				player.swingArm(Hand.MAIN_HAND);
-				player.playSound(SoundEvents.ENTITY_ITEM_BREAK, 1.0F, 1.0F);
+				World world = player.world;
+				world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 				generateParticles(player, player);
 				if (!player.abilities.isCreativeMode) {
 					keyItem.shrink(1);
@@ -147,7 +180,7 @@ public class HandcuffsEventsHandler {
 			UUID sharedUUID = UUID.fromString(handcuffUUID);
 			PlayerEntity linkedPlayer = player.world.getEntitiesWithinAABB(PlayerEntity.class, player.getBoundingBox().grow(50), e -> e != player && handcuffUUID.equals(e.getPersistentData().getString("HandcuffUUID"))).stream()
 					.filter(e -> e.isAlive()).min(Comparator.comparingDouble(e -> e.getDistance(player))).orElse(null);
-			if (linkedPlayer == null) {
+			if (linkedPlayer == null || !linkedPlayer.isAlive()) {
 				removeSharedModifier(player);
 			} else {
 				pullPlayersTogether(player, linkedPlayer);
@@ -163,11 +196,15 @@ public class HandcuffsEventsHandler {
 		double flightFactor = 1.5;
 		if (distance > minDistance) {
 			Vector3d direction = new Vector3d(linkedPlayer.getPosX() - player.getPosX(), linkedPlayer.getPosY() - player.getPosY(), linkedPlayer.getPosZ() - player.getPosZ()).normalize();
+			// Ajustar la fuerza si alguno de los jugadores está volando
 			if (player.abilities.isFlying || linkedPlayer.abilities.isFlying) {
 				attractionStrength *= flightFactor;
 			}
 			double factor = Math.min(1.0, (distance - minDistance) / (maxDistance - minDistance));
 			direction = direction.scale(attractionStrength * factor);
+			if (player.abilities.isFlying && linkedPlayer.abilities.isFlying) {
+				direction = new Vector3d(direction.x, 0, direction.z);
+			}
 			updatePlayerMotion(player, direction);
 			updatePlayerMotion(linkedPlayer, direction.scale(-1));
 		}
@@ -179,7 +216,7 @@ public class HandcuffsEventsHandler {
 		double smoothFactor = 0.5;
 		newMotion = currentMotion.add(newMotion.subtract(currentMotion).scale(smoothFactor));
 		if (player.abilities.isFlying) {
-			newMotion = newMotion.add(0, 0.1, 0);
+			newMotion = new Vector3d(newMotion.x, Math.min(newMotion.y, 0.1), newMotion.z);
 		}
 		player.setMotion(newMotion);
 		player.velocityChanged = true;
@@ -208,7 +245,8 @@ public class HandcuffsEventsHandler {
 				isHandcuffedActionInProgress = true;
 				player.swingArm(Hand.MAIN_HAND);
 				targetPlayer.swingArm(Hand.MAIN_HAND);
-				targetPlayer.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+				World world = targetPlayer.world;
+				world.playSound(null, targetPlayer.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 1.0F, 1.0F);
 				applyHandcuffedAttribute(targetPlayer);
 				if (!player.abilities.isCreativeMode) {
 					handcuffItem.shrink(1);
@@ -235,7 +273,8 @@ public class HandcuffsEventsHandler {
 		ModifiableAttributeInstance handcuffedAttribute = player.getAttribute(HandcuffsAttributes.HANDCUFFED.get());
 		if (handcuffItem.getItem() instanceof HandcuffsItem && handcuffedAttribute != null && handcuffedAttribute.getValue() == 0.0D) {
 			player.swingArm(Hand.MAIN_HAND);
-			player.playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+			World world = player.world;
+			world.playSound(null, player.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 1.0F, 1.0F);
 			applyHandcuffedAttribute(player);
 			if (!player.abilities.isCreativeMode) {
 				handcuffItem.shrink(1);

@@ -4,6 +4,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import net.streavent.handcuffs.init.HandcuffsModItems;
+import net.streavent.handcuffs.init.HandcuffsModEntities;
 import net.streavent.handcuffs.config.HandcuffsCommonConfig;
 import net.streavent.handcuffs.config.HandcuffsClientConfig;
 
@@ -41,6 +42,7 @@ public class HandcuffsMod {
 		MinecraftForge.EVENT_BUS.register(new HandcuffsModFMLBusEvents(this));
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		HandcuffsModItems.REGISTRY.register(bus);
+		HandcuffsModEntities.REGISTRY.register(bus);
 		bus.register(this);
 		// Start of user code block mod init
 		HandcuffsClientConfig.register();

@@ -4,10 +4,9 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "mixins.handcuffs.refmap.json",
   "mixins": [
-    "PlayerEntityMixin"
+    "PlayerEntityMixin",
+    "LivingEntityMixin"
   ],
-  "client": [
-    "PlayerRendererMixin"
-  ],
+  "client": [],
   "minVersion": "0.8"
 }

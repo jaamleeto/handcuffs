@@ -1,6 +1,7 @@
 
 package net.streavent.handcuffs;
 
+import net.streavent.handcuffs.entity.HandpointEntity;
 import net.streavent.handcuffs.config.HandcuffsCommonConfig;
 
 import net.minecraftforge.fml.common.Mod;
@@ -8,12 +9,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.World;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.ai.attributes.Attributes;
+import net.minecraft.entity.Entity;
 import net.minecraft.command.Commands;
 import net.minecraft.command.CommandSource;
 
@@ -96,12 +99,24 @@ public class HandcuffsCommand {
 	}
 
 	public static void removeSharedModifier(ServerPlayerEntity player) {
+		World world = player.world;
 		if (player.getPersistentData().contains("HandcuffUUID")) {
 			String uuidString = player.getPersistentData().getString("HandcuffUUID");
 			UUID modifierUUID = UUID.fromString(uuidString);
 			ModifiableAttributeInstance attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
 			if (attribute != null && attribute.getModifier(modifierUUID) != null) {
 				attribute.removeModifier(modifierUUID);
+			}
+			if (player.getAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get()) != null) {
+				player.getAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get()).setBaseValue(0);
+			}
+			if (player.getPersistentData().contains("LinkedHandpointID")) {
+				int handpointId = player.getPersistentData().getInt("LinkedHandpointID");
+				Entity handpointEntity = world.getEntityByID(handpointId);
+				if (handpointEntity instanceof HandpointEntity) {
+					handpointEntity.remove();
+				}
+				player.getPersistentData().remove("LinkedHandpointID");
 			}
 			player.getPersistentData().remove("HandcuffUUID");
 			player.getPersistentData().remove("HandcuffLinked");

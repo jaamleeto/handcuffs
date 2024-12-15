@@ -16,6 +16,7 @@ public abstract class PlayerEntityMixin {
 	private static void injectPlayerAttributes(CallbackInfoReturnable<AttributeModifierMap.MutableAttribute> cir) {
 		AttributeModifierMap.MutableAttribute attributes = cir.getReturnValue();
 		attributes.createMutableAttribute(HandcuffsAttributes.HANDCUFFED.get(), 0.0D);
+		attributes.createMutableAttribute(HandcuffsAttributes.HANDCUFF_HOLDER.get(), 0.0D);
 		cir.setReturnValue(attributes);
 	}
 }

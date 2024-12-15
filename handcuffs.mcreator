@@ -85,6 +85,44 @@
           "src/main/java/net/streavent/handcuffs/HandcuffsCommand.java"
         ]
       }
+    },
+    {
+      "name": "HandcuffRenderer",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handcuff_renderer",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/HandcuffRenderer.java"
+        ]
+      }
+    },
+    {
+      "name": "RenderChain",
+      "type": "code",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "render_chain",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/RenderChain.java"
+        ]
+      }
+    },
+    {
+      "name": "Handpoint",
+      "type": "livingentity",
+      "compiles": true,
+      "locked_code": true,
+      "registry_name": "handpoint",
+      "metadata": {
+        "files": [
+          "src/main/java/net/streavent/handcuffs/entity/HandpointEntity.java",
+          "src/main/java/net/streavent/handcuffs/client/renderer/HandpointRenderer.java",
+          "src/main/resources/assets/handcuffs/models/item/handpoint_spawn_egg.json"
+        ]
+      }
     }
   ],
   "variable_elements": [],
@@ -103,7 +141,9 @@
       "item.handcuffs.key.tooltip": "§a§lRight-click §r§7on a player to uncuff them or break the link of two handcuffed players.",
       "commands.handcuffs.success.handcuffed": "%s has been handcuffed",
       "commands.handcuffs.success.uncuffed": "%s has been uncuffed",
+      "entity.handcuffs.handpoint": "Handpoint",
       "item.handcuffs.tooltip": "§a§lRight-click §r§7to handcuff a player. A handcuffed player cannot use items, attack, or break blocks. To uncuff, a key item is required and the actions will only be done in the mainhand.",
+      "item.handcuffs.handpoint_spawn_egg": "Handpoint Spawn Egg",
       "commands.handcuffs.disabled": "The handcuffs command is currently disabled in the server settings.",
       "item.handcuffs.key": "§7Handcuffs Key"
     }
@@ -116,7 +156,7 @@
     "modid": "handcuffs",
     "modName": "Handcuffs",
     "version": "1.0.0",
-    "description": " A mod that adds handcuffs to Minecraft, allowing players to restrain others with customizable interactions, restrictions, and effects.",
+    "description": "A mod that adds handcuffs to Minecraft, allowing players to restrain others with customizable interactions and restrictions.",
     "author": "Streavent Studios, Jaamleeto",
     "websiteURL": "https://mcreator.net",
     "license": "All Rights Reserved",
